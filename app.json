@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "my-rn-expo-app",
-    "slug": "my-rn-expo-app",
+    "name": "price-list",
+    "slug": "price-list",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -36,6 +36,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "967e33dd-ee0d-4fc2-9d29-b2d42abe24ac"
+      }
+    },
+    "owner": "ezrachan"
   }
 }
