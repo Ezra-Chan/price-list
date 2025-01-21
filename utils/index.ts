@@ -12,6 +12,17 @@ export const getStorageData = async (
   return result;
 };
 
+export const getAllStorageData = async (func: Function = () => {}) => {
+  const keys = await AsyncStorage.getAllKeys();
+  const values = await AsyncStorage.multiGet(keys);
+  const allData = values.reduce((acc, [key, value]) => {
+    acc[key] = value;
+    return acc;
+  }, {} as Record<string, string | null>);
+  func(allData);
+  return allData;
+};
+
 export const toFixed = (num: string | number, fixed = 2) => {
   return (+num).toFixed(fixed);
 };

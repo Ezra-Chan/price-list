@@ -1,6 +1,6 @@
 import React from "react";
-import { Tabs } from "expo-router";
 import { Platform } from "react-native";
+import { Tabs } from "expo-router";
 import { Icon } from "@ant-design/react-native";
 import { HapticTab } from "@/components/HapticTab";
 import TabBarBackground from "@/components/ui/TabBarBackground";

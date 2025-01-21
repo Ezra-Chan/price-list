@@ -12,6 +12,11 @@ export interface UnitItem {
 
 export type Unit = UnitItem[];
 
+export interface DicItem {
+  id: number;
+  name: string;
+}
+
 export interface HistoricalPrice {
   price: string;
   purchasePrice: string;

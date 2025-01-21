@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -7,7 +7,7 @@ import { List, SwipeAction, Collapse, Icon } from "@ant-design/react-native";
 import SearchBar from "@nutui/nutui-react-native/lib/module/searchbar";
 import FixedNav from "@nutui/nutui-react-native/lib/module/fixednav";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { getStorageData } from "@/utils";
+import { getStorageData, debounce } from "@/utils";
 
 import type { Group, Data, Unit } from "@/types";
 
@@ -115,20 +115,18 @@ export default function HomeScreen() {
   const [activeKey, setActiveKey] = useState<string[]>([]);
   const route = useRouter();
 
-  useFocusEffect(() => {
-    getStorageData("data", setData);
-    getStorageData("group", (val: Group) => {
-      setGroup(val);
-      setActiveKey(val.map(_ => _.id + ""));
-    });
-    getStorageData("unit", (val: Unit) => {
-      const unitObj: Record<number, string> = {};
-      val.forEach(_ => {
-        unitObj[_.id] = _.name;
+  useFocusEffect(
+    useCallback(() => {
+      getStorageData("data", setData);
+      getStorageData("unit", (val: Unit) => {
+        const unitObj: Record<number, string> = {};
+        val.forEach(_ => {
+          unitObj[_.id] = _.name;
+        });
+        setUnit(unitObj);
       });
-      setUnit(unitObj);
-    });
-  });
+    }, []),
+  );
 
   useEffect(() => {
     setFilterData(value);
@@ -146,7 +144,9 @@ export default function HomeScreen() {
   const setFilterGroup = async (dt: Data) => {
     const originGroup: Group = await getStorageData("group");
     const dtGroups = [...new Set(dt.map(_ => _.group))];
-    setGroup(originGroup.filter(g => dtGroups.includes(g.id)));
+    const filterGroup = originGroup.filter(g => dtGroups.includes(g.id));
+    setGroup(filterGroup);
+    setActiveKey(filterGroup.map(_ => _.id + ""));
   };
 
   const deleteDataItem = async (id: number) => {
@@ -157,10 +157,10 @@ export default function HomeScreen() {
 
   return (
     <GestureHandlerRootView>
-      <SafeAreaView className="h-full">
+      <SafeAreaView className="h-full bg-white">
         <SearchBar
           value={value}
-          onChange={setValue}
+          onChange={debounce(setValue)}
           onClear={() => setValue("")}
           placeholder="搜索"
           shape="round"

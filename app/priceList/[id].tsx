@@ -92,7 +92,7 @@ const Item = () => {
       form.getFieldsValue();
     const time = dayjs().format("YYYY-MM-DD");
     const data = await getStorageData("data");
-    const num = Math.max(...data.map((_: DataItem) => _.id || 0));
+    const num = Math.max(...data.map((_: DataItem) => _.id || 0), 0) + 1;
     const unitName = unit[0] ? units.find(_ => _.id === unit[0])?.name : "";
     if (isAdd) {
       const isSame = data.some((d: DataItem) => d.name === rest.name);
@@ -101,7 +101,7 @@ const Item = () => {
       }
       const dataItem = {
         ...rest,
-        id: num + 1,
+        id: num,
         price: toFixed(price),
         purchasePrice: toFixed(purchasePrice),
         unit: unit[0],
