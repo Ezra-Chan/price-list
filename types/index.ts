@@ -32,6 +32,7 @@ export interface DataItem {
   purchasePrice: string;
   updateTime: string;
   historicalPrices: HistoricalPrice;
+  [key: string]: any;
 }
 
 export type Data = DataItem[];

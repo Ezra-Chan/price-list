@@ -1,29 +1,30 @@
 import { useState, useEffect } from "react";
-import { View, ScrollView, Alert } from "react-native";
+import { View, ScrollView } from "react-native";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { Checkbox, Input, Toast } from "@ant-design/react-native";
+import { Checkbox, Input, Modal, Toast } from "@ant-design/react-native";
 import Button from "@nutui/nutui-react-native/lib/module/button";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getStorageData } from "@/utils";
-import { Group, Unit, DicItem } from "@/types";
+import { Group, Unit, DicItem, DataItem } from "@/types";
 
 const CheckboxItem = Checkbox.CheckboxItem;
 const dicMap: Record<string, string> = {
   group: "分组",
   unit: "单位",
 };
+type DicType = keyof typeof dicMap;
 
 const Dictionary = () => {
-  const [indeterminate, setIndeterminate] = useState(false);
-  const [checkAll, setCheckAll] = useState(false);
-  const [checkedList, setCheckedList] = useState(new Set());
-  const [dictionary, setDictionary] = useState<Group | Unit>([]);
+  const [indeterminate, setIndeterminate] = useState(false); // 半选状态
+  const [checkAll, setCheckAll] = useState(false); // 全选状态
+  const [checkedList, setCheckedList] = useState(new Set()); // 选中列表
+  const [dictionary, setDictionary] = useState<Group | Unit>([]); // 字典列表
   const { type } = useLocalSearchParams();
   const navigation = useNavigation();
-  const dicName = dicMap[type as string];
+  const dicName = dicMap[type as DicType];
 
   useEffect(() => {
-    getStorageData(type as string, setDictionary);
+    getStorageData(type as DicType, setDictionary);
   }, []);
 
   useEffect(() => {
@@ -43,6 +44,9 @@ const Dictionary = () => {
     setCheckAll(e.target.checked);
   };
 
+  /**
+   * checkbox改变事件
+   */
   const onChange = (value: any, e: { target: { checked: boolean } }) => {
     if (e.target.checked) {
       checkedList.add(value);
@@ -57,22 +61,19 @@ const Dictionary = () => {
     setCheckAll(checkedList.size === dictionary.length);
   };
 
+  /** 新增 */
   const add = async () => {
     const num = Math.max(...dictionary.map((d: DicItem) => d.id || 0), 0) + 1;
     const newDic = [...dictionary, { id: num, name: "" }];
     setDictionary(newDic);
-    await AsyncStorage.setItem(type as string, JSON.stringify(newDic));
+    await AsyncStorage.setItem(type as DicType, JSON.stringify(newDic));
   };
 
   const del = async () => {
     if (checkedList.size === 0) {
-      return Toast.info({
-        content: "请先选择要删除的" + dicName,
-        duration: 1,
-        mask: false,
-      });
+      return Toast.info("请先选择要删除的" + dicName);
     }
-    Alert.alert("提示", `确定要删除选中的${dicName}吗？`, [
+    Modal.alert("提示", `确定要删除选中的${dicName}吗？`, [
       {
         text: "取消",
         style: "cancel",
@@ -80,11 +81,22 @@ const Dictionary = () => {
       {
         text: "确定",
         onPress: async () => {
+          const data = await getStorageData("data");
+          const checkedDic = Array.from(checkedList);
+          const keyData = data.find((d: DataItem) =>
+            checkedDic.includes(d[type as DicType]),
+          );
+          if (keyData) {
+            const dicItemName = dictionary.find(
+              dic => dic.id === keyData[type as DicType],
+            )?.name;
+            return Toast.fail("删除失败，" + dicItemName + " 已被使用");
+          }
           const rest = dictionary.filter(
             (d: DicItem) => !checkedList.has(d.id),
           );
           setDictionary(rest);
-          await AsyncStorage.setItem(type as string, JSON.stringify(rest));
+          await AsyncStorage.setItem(type as DicType, JSON.stringify(rest));
           setCheckedList(new Set()); // 清空选中状态
           setIndeterminate(false);
           setCheckAll(false);
@@ -100,11 +112,11 @@ const Dictionary = () => {
 
   const edit = async (id: number, name: string) => {
     const index = dictionary.findIndex((d: DicItem) => d.id === id);
-    const newDic = [...dictionary];
     if (index !== -1) {
+      const newDic = [...dictionary];
       newDic[index].name = name;
       setDictionary(newDic);
-      await AsyncStorage.setItem(type as string, JSON.stringify(newDic));
+      await AsyncStorage.setItem(type as DicType, JSON.stringify(newDic));
     }
   };
 

@@ -1,13 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
-import { ScrollView, Text } from "react-native";
+import { ScrollView, Text, Linking, Alert } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { List, SwipeAction, Collapse, Icon } from "@ant-design/react-native";
-import SearchBar from "@nutui/nutui-react-native/lib/module/searchbar";
+import {
+  List,
+  SwipeAction,
+  Collapse,
+  Icon,
+  Toast,
+} from "@ant-design/react-native";
 import FixedNav from "@nutui/nutui-react-native/lib/module/fixednav";
+import SearchBar from "@nutui/nutui-react-native/lib/module/searchbar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { getStorageData, debounce } from "@/utils";
+import {
+  getStorageData,
+  debounce,
+  setMultiStorageData,
+  importData,
+} from "@/utils";
 
 import type { Group, Data, Unit } from "@/types";
 
@@ -136,6 +147,41 @@ export default function HomeScreen() {
     setFilterGroup(data);
   }, [data]);
 
+  useEffect(() => {
+    const handleOpenURL = async (event: any) => {
+      const fileUri = event.url;
+      console.log("Received file URI:", fileUri);
+      if (fileUri.startsWith("file://")) {
+        return importData(fileUri, async (content: any) => {
+          if (content) {
+            try {
+              const parsedData = JSON.parse(content);
+              await setMultiStorageData(parsedData);
+              Alert.alert("提示", "数据导入成功！");
+            } catch (error) {
+              alert("导入失败，请检查文件内容是否正确。");
+            }
+          }
+        });
+      }
+    };
+
+    Linking.addEventListener("url", handleOpenURL);
+
+    // 检查应用启动时是否有文件共享
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        handleOpenURL({ url });
+      }
+    });
+
+    Toast.config({ duration: 1, mask: false });
+
+    return () => {
+      Linking.removeAllListeners("url");
+    };
+  }, []);
+
   const setFilterData = async (str: string) => {
     const originData: Data = await getStorageData("data");
     setData(str ? originData.filter(dt => dt.name.includes(str)) : originData);
@@ -169,7 +215,6 @@ export default function HomeScreen() {
           position={{ bottom: 100 }}
           onChange={() => route.push("/priceList/add")}
           slotBtn={<Icon name="plus" color="white" size={30} />}
-          styles={[{ backgroundColor: "#000" }]}
         />
         <ScrollView>
           <Collapse activeKey={activeKey} onChange={setActiveKey}>
@@ -177,7 +222,7 @@ export default function HomeScreen() {
               <Collapse.Panel key={item.id + ""} title={item.name}>
                 {data
                   .filter(_ => _.group === item.id)
-                  .map(_ => (
+                  .map((_, index, arr) => (
                     <SwipeAction
                       key={_.id}
                       right={[
@@ -197,11 +242,17 @@ export default function HomeScreen() {
                             {_.price}元 / {unit[_.unit]}
                           </Text>
                         }
-                        onPress={() =>
+                        onPress={() => {
+                          setValue("");
                           route.push({
                             pathname: "/priceList/[id]",
                             params: { id: _.id },
-                          })
+                          });
+                        }}
+                        styles={
+                          index === arr.length - 1
+                            ? { Line: { borderBottomColor: "transparent" } }
+                            : {}
                         }
                       >
                         {_.name}

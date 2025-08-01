@@ -147,7 +147,7 @@ const Item = () => {
       };
       data[index] = dataItem;
       await AsyncStorage.setItem("data", JSON.stringify(data));
-      Toast.success({ content: "保存成功", duration: 1, mask: false });
+      Toast.success("保存成功");
       navigation.goBack();
     }
   };
